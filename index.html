@@ -251,13 +251,26 @@
       transform: scale(0.98);
       background: #6b21a8;
     }
+
+    .btn-reset {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      background: transparent;
+      border: 1px solid #d1d5db;
+      color: #6b7280;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <div class="app-container">
     <header>
       <h1>Precificação E-Commerce</h1>
-      <p><span class="badge-yellow"></span> Células amarelas editáveis</p>
+      <p><span class="badge-yellow"></span> Salva automaticamente sua última simulação</p>
     </header>
 
     <!-- 0. Simulador de Margem Alvo -->
@@ -408,16 +421,54 @@
         <div class="sub-val" id="percResultadoFinal">0,0%</div>
       </div>
     </div>
+
+    <button type="button" class="btn-reset" id="btnResetar">Restaurar valores padrão</button>
   </div>
 
   <script>
     const fmtMoeda = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const fmtPerc = (val) => (val * 100).toFixed(2).replace('.', ',') + '%';
 
+    const inputIds = [
+      'margemAlvo', 'custoProd', 'vezes', 'markupDesejado',
+      'tarifaFrete', 'bonificacao', 'tarifaComissao',
+      'precoFinal', 'embalagem', 'freteFlex'
+    ];
+
     let ultimoPrecoNecessario = 0;
 
+    // Salva o estado atual na memória do navegador/celular
+    function salvarDados() {
+      const dados = {};
+      inputIds.forEach(id => {
+        dados[id] = document.getElementById(id).value;
+      });
+      dados['considerarImpostos'] = document.getElementById('considerarImpostos').checked;
+      localStorage.setItem('dadosSimulacaoMarketplace', JSON.stringify(dados));
+    }
+
+    // Carrega os dados salvos da última vez que o app foi usado
+    function carregarDadosSalvos() {
+      const dadosSalvos = localStorage.getItem('dadosSimulacaoMarketplace');
+      if (dadosSalvos) {
+        try {
+          const dados = JSON.parse(dadosSalvos);
+          inputIds.forEach(id => {
+            if (dados[id] !== undefined) {
+              document.getElementById(id).value = dados[id];
+            }
+          });
+          if (dados['considerarImpostos'] !== undefined) {
+            document.getElementById('considerarImpostos').checked = dados['considerarImpostos'];
+          }
+        } catch (e) {
+          console.error("Erro ao carregar dados salvos:", e);
+        }
+      }
+    }
+
     function calcular() {
-      // 1. Inputs Amarelos
+      // Inputs Amarelos
       const F1 = parseFloat(document.getElementById('custoProd').value) || 0;
       const F2 = parseFloat(document.getElementById('vezes').value) || 0;
       const B3 = parseFloat(document.getElementById('markupDesejado').value) || 0;
@@ -436,14 +487,13 @@
       const taxaImposto = incImpostos ? 0.095 : 0.0;
       document.getElementById('labelImposto').textContent = incImpostos ? 'Menos Impostos (9,5%)' : 'Menos Impostos (0% - Desativado)';
 
-      // 2. Fórmulas Base
+      // Fórmulas Base
       const B2 = F1 * F2; // Custo Total Produto
       const B4 = B2 * B3; // Preço de Venda
       const C3 = B2 !== 0 ? (B4 / B2) - 1 : 0; // Markup Desejado %
       const B7 = 1 - C7;  // Líquido da Comissão
 
-      // 3. Cálculo Inverso: Preço Necessário para atingir a Margem Líquida Alvo
-      // Fórmula: Preço = (Custos Fixos) / (1 - Comissão - Imposto - Margem Alvo)
+      // Cálculo Inverso de Margem Alvo
       const divisor = B7 - taxaImposto - margemAlvo;
       const custosFixos = B2 + B5 - B6 + B14 + B15;
 
@@ -455,7 +505,7 @@
         ultimoPrecoNecessario = 0;
       }
 
-      // 4. Fluxo normal da Planilha com o Preço de Venda Final (B9)
+      // Fluxo normal da Planilha
       const B8 = B7 !== 0 ? (B4 + B5) / B7 : 0;
       const B10 = B2 !== 0 ? ((B9 * B7) - B5 + B6) / B2 : 0;
       const B11 = B2 * B10;
@@ -470,7 +520,7 @@
       const B16 = B13 - B14 - B15;
       const C16 = B9 !== 0 ? B16 / B9 : 0;
 
-      // 5. Renderização
+      // Renderização
       document.getElementById('custoTotalProd').textContent = fmtMoeda(B2);
       document.getElementById('markupPerc').textContent = fmtPerc(C3);
       document.getElementById('precoVendaSugerido').textContent = fmtMoeda(B4);
@@ -488,9 +538,12 @@
 
       document.getElementById('resultadoFinal').textContent = fmtMoeda(B16);
       document.getElementById('percResultadoFinal').textContent = fmtPerc(C16);
+
+      // Salva sempre que houver alteração
+      salvarDados();
     }
 
-    // Botão para aplicar o preço calculado diretamente no Preço Final
+    // Botão para aplicar o preço calculado
     document.getElementById('btnAplicarPreco').addEventListener('click', () => {
       if (ultimoPrecoNecessario > 0) {
         document.getElementById('precoFinal').value = ultimoPrecoNecessario.toFixed(2);
@@ -498,11 +551,22 @@
       }
     });
 
+    // Botão para resetar aos valores de fábrica
+    document.getElementById('btnResetar').addEventListener('click', () => {
+      if (confirm("Deseja restaurar os valores padrão da planilha?")) {
+        localStorage.removeItem('dadosSimulacaoMarketplace');
+        location.reload();
+      }
+    });
+
+    // Ouvintes de eventos
     document.querySelectorAll('input').forEach(input => {
       input.addEventListener('input', calcular);
     });
     document.getElementById('considerarImpostos').addEventListener('change', calcular);
 
+    // Carrega dados salvos e calcula na inicialização
+    carregarDadosSalvos();
     calcular();
   </script>
 </body>
