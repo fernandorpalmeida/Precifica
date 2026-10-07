@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Precificação Marketplace</title>
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --card-bg: #ffffff;
+      --primary: #1e3a8a;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --yellow-input: #fef08a;
+      --yellow-border: #ca8a04;
+      --calc-bg: #e0e7ff;
+      --calc-border: #93c5fd;
+      --accent: #15803d;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    header p {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 16px 0 10px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      background: #f9fafb;
+    }
+
+    .row label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      flex: 1;
+      padding-right: 8px;
+    }
+
+    .input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Campos Editáveis (Células Amarelas) */
+    .row.editable {
+      background: #fffbeb;
+      border: 1px solid var(--yellow-border);
+    }
+
+    .row.editable input {
+      background: var(--yellow-input);
+      border: 1px solid var(--yellow-border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-align: right;
+      width: 110px;
+      color: #713f12;
+      outline: none;
+    }
+
+    .row.editable input:focus {
+      box-shadow: 0 0 0 2px #eab308;
+    }
+
+    /* Campos Calculados (Células Azuis/Cinzas da Planilha) */
+    .row.calc {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+    }
+
+    .row.calc .value-group {
+      text-align: right;
+    }
+
+    .row.calc .main-val {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #14532d;
+    }
+
+    .row.calc .sub-val {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .row.highlight {
+      background: #eef2ff;
+      border: 1px solid var(--calc-border);
+    }
+
+    .row.highlight .main-val {
+      color: var(--primary);
+    }
+
+    .badge-yellow {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background: #facc15;
+      border-radius: 50%;
+      border: 1px solid #ca8a04;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <h1>Precificação E-Commerce</h1>
+      <p><span class="badge-yellow"></span> Campos em amarelo são editáveis</p>
+    </header>
+
+    <!-- Custos e Markup Base -->
+    <div class="section-title">1. Base do Produto</div>
+    
+    <div class="row editable">
+      <label for="custoProd">Custo Produto (R$)</label>
+      <input type="number" id="custoProd" step="0.01" value="5.76" />
+    </div>
+
+    <div class="row editable">
+      <label for="vezes">Quantidade (Vezes)</label>
+      <input type="number" id="vezes" step="1" value="2000" />
+    </div>
+
+    <div class="row calc">
+      <label>Custo Total Produto</label>
+      <div class="value-group">
+        <div class="main-val" id="custoTotalProd">R$ 0,00</div>
+      </div>
+    </div>
+
+    <div class="row editable">
+      <label for="markupDesejado">Markup Desejado (x)</label>
+      <input type="number" id="markupDesejado" step="0.01" value="2.5" />
+    </div>
+
+    <div class="row calc">
+      <label>Markup Desejado (%)</label>
+      <div class="value-group">
+        <div class="main-val" id="markupPerc">0,0%</div>
+      </div>
+    </div>
+
+    <div class="row calc">
+      <label>Preço de Venda Sugerido</label>
+      <div class="value-group">
+        <div class="main-val" id="precoVendaSugerido">R$ 0,00</div>
+      </div>
+    </div>
+
+    <!-- Tarifas e Custos de Venda -->
+    <div class="section-title">2. Taxas & Marketplace</div>
+
+    <div class="row editable">
+      <label for="tarifaFrete">Tarifa / Frete (R$)</label>
+      <input type="number" id="tarifaFrete" step="0.01" value="4.50" />
+    </div>
+
+    <div class="row editable">
+      <label for="bonificacao">Bonificação (R$)</label>
+      <input type="number" id="bonificacao" step="0.01" value="0.00" />
+    </div>
+
+    <div class="row editable">
+      <label for="tarifaComissao">Comissão Marketplace (%)</label>
+      <input type="number" id="tarifaComissao" step="0.1" value="20.0" />
+    </div>
+
+    <div class="row highlight">
+      <label>Preço Calculado E-commerce</label>
+      <div class="value-group">
+        <div class="main-val" id="precoVendaEcommerce">R$ 0,00</div>
+      </div>
+    </div>
+
+    <!-- Preço Final Efetivo -->
+    <div class="section-title">3. Venda Final & Retorno</div>
+
+    <div class="row editable">
+      <label for="precoFinal">Preço de Venda Final (R$)</label>
+      <input type="number" id="precoFinal" step="0.01" value="32900.00" />
+    </div>
+
+    <div class="row calc">
+      <label>Markup Final E-commerce</label>
+      <div class="value-group">
+        <div class="main-val" id="markupFinal">0,00x</div>
+      </div>
+    </div>
+
+    <div class="row calc">
+      <label>Valor que Sobra E-commerce</label>
+      <div class="value-group">
+        <div class="main-val" id="valorSobra">R$ 0,00</div>
+        <div class="sub-val" id="percSobra">0,0%</div>
+      </div>
+    </div>
+
+    <div class="row calc">
+      <label>Menos Impostos (9,5%)</label>
+      <div class="value-group">
+        <div class="main-val" id="aposImpostos">R$ 0,00</div>
+        <div class="sub-val" id="percImpostos">0,0%</div>
+      </div>
+    </div>
+
+    <div class="row calc">
+      <label>Menos Custo do Produto</label>
+      <div class="value-group">
+        <div class="main-val" id="aposCustoProd">R$ 0,00</div>
+        <div class="sub-val" id="percCustoProd">0,0%</div>
+      </div>
+    </div>
+
+    <!-- Despesas Adicionais -->
+    <div class="section-title">4. Despesas Operacionais</div>
+
+    <div class="row editable">
+      <label for="embalagem">Valor Embalagem (R$)</label>
+      <input type="number" id="embalagem" step="0.01" value="0.00" />
+    </div>
+
+    <div class="row editable">
+      <label for="freteFlex">Valor Frete Flex (R$)</label>
+      <input type="number" id="freteFlex" step="0.01" value="3.00" />
+    </div>
+
+    <div class="row calc" style="border: 2px solid #16a34a; background: #ecfdf5;">
+      <label style="font-weight: 700;">Resultado Líquido Final</label>
+      <div class="value-group">
+        <div class="main-val" id="resultadoFinal" style="color: #15803d; font-size: 1.1rem;">R$ 0,00</div>
+        <div class="sub-val" id="percResultadoFinal">0,0%</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fmtMoeda = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const fmtPerc = (val) => (val * 100).toFixed(2).replace('.', ',') + '%';
+
+    function calcular() {
+      // Inputs Amarelos
+      const F1 = parseFloat(document.getElementById('custoProd').value) || 0;
+      const F2 = parseFloat(document.getElementById('vezes').value) || 0;
+      const B3 = parseFloat(document.getElementById('markupDesejado').value) || 0;
+      const B5 = parseFloat(document.getElementById('tarifaFrete').value) || 0;
+      const B6 = parseFloat(document.getElementById('bonificacao').value) || 0;
+      const C7 = (parseFloat(document.getElementById('tarifaComissao').value) || 0) / 100;
+      const B9 = parseFloat(document.getElementById('precoFinal').value) || 0;
+      const B14 = parseFloat(document.getElementById('embalagem').value) || 0;
+      const B15 = parseFloat(document.getElementById('freteFlex').value) || 0;
+
+      // Fórmulas da planilha
+      const B2 = F1 * F2; // Custo do Produto
+      const B4 = B2 * B3; // Preço de Venda
+      const C3 = B2 !== 0 ? (B4 / B2) - 1 : 0; // Markup Desejado %
+      const B7 = 1 - C7; // Tarifa Comissão líquida
+
+      // Preço de Venda E-commerce = (B4 + B5) / B7
+      const B8 = B7 !== 0 ? (B4 + B5) / B7 : 0;
+
+      // Markup Final no E-commerce = ((B9 * B7) - B5 + B6) / B2
+      const B10 = B2 !== 0 ? ((B9 * B7) - B5 + B6) / B2 : 0;
+
+      // Valor que Sobra E-commerce = B2 * B10
+      const B11 = B2 * B10;
+      const C11 = B9 !== 0 ? B11 / B9 : 0;
+
+      // Menos Impostos = B11 - (B9 * 0.095)
+      const B12 = B11 - (B9 * 0.095);
+      const C12 = B9 !== 0 ? B12 / B9 : 0;
+
+      // Menos Custo Produto = B12 - B2
+      const B13 = B12 - B2;
+      const C13 = B9 !== 0 ? B13 / B9 : 0;
+
+      // Menos Custo da Embalagem = B13 - B14 - B15
+      const B16 = B13 - B14 - B15;
+      const C16 = B9 !== 0 ? B16 / B9 : 0;
+
+      // Renderização
+      document.getElementById('custoTotalProd').textContent = fmtMoeda(B2);
+      document.getElementById('markupPerc').textContent = fmtPerc(C3);
+      document.getElementById('precoVendaSugerido').textContent = fmtMoeda(B4);
+      document.getElementById('precoVendaEcommerce').textContent = fmtMoeda(B8);
+      document.getElementById('markupFinal').textContent = B10.toFixed(2).replace('.', ',') + 'x';
+      
+      document.getElementById('valorSobra').textContent = fmtMoeda(B11);
+      document.getElementById('percSobra').textContent = fmtPerc(C11);
+
+      document.getElementById('aposImpostos').textContent = fmtMoeda(B12);
+      document.getElementById('percImpostos').textContent = fmtPerc(C12);
+
+      document.getElementById('aposCustoProd').textContent = fmtMoeda(B13);
+      document.getElementById('percCustoProd').textContent = fmtPerc(C13);
+
+      document.getElementById('resultadoFinal').textContent = fmtMoeda(B16);
+      document.getElementById('percResultadoFinal').textContent = fmtPerc(C16);
+    }
+
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', calcular);
+    });
+
+    calcular();
+  </script>
+</body>
+</html>
