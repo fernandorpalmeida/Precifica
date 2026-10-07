@@ -89,12 +89,6 @@
       padding-right: 8px;
     }
 
-    .input-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
     /* Campos Editáveis (Células Amarelas) */
     .row.editable {
       background: #fffbeb;
@@ -118,7 +112,7 @@
       box-shadow: 0 0 0 2px #eab308;
     }
 
-    /* Campos Calculados (Células Azuis/Cinzas da Planilha) */
+    /* Campos Calculados */
     .row.calc {
       background: #f0fdf4;
       border: 1px solid #bbf7d0;
@@ -157,16 +151,132 @@
       border-radius: 50%;
       border: 1px solid #ca8a04;
     }
+
+    /* Interruptor de Impostos */
+    .switch-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 10px 12px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+
+    .switch-container span {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1;
+      transition: 0.3s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    input:checked + .slider {
+      background-color: #2563eb;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(22px);
+    }
+
+    /* Cartão do Simulador Alvo */
+    .target-card {
+      background: #faf5ff;
+      border: 1.5px dashed #a855f7;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 18px;
+    }
+
+    .target-card .title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #6b21a8;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .target-btn {
+      width: 100%;
+      margin-top: 10px;
+      background: #7e22ce;
+      color: white;
+      border: none;
+      padding: 9px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .target-btn:active {
+      transform: scale(0.98);
+      background: #6b21a8;
+    }
   </style>
 </head>
 <body>
   <div class="app-container">
     <header>
       <h1>Precificação E-Commerce</h1>
-      <p><span class="badge-yellow"></span> Campos em amarelo são editáveis</p>
+      <p><span class="badge-yellow"></span> Células amarelas editáveis</p>
     </header>
 
-    <!-- Custos e Markup Base -->
+    <!-- 0. Simulador de Margem Alvo -->
+    <div class="target-card">
+      <div class="title">🎯 Preço Sugerido por Margem Alvo</div>
+      <div class="row editable" style="margin-bottom: 8px; background: #fff;">
+        <label for="margemAlvo">Resultado Líquido Desejado (%)</label>
+        <input type="number" id="margemAlvo" step="0.5" value="20.0" />
+      </div>
+      <div class="row calc" style="background: #f3e8ff; border-color: #d8b4fe;">
+        <label style="color: #581c87; font-weight: 700;">Preço de Venda Necessário</label>
+        <div class="value-group">
+          <div class="main-val" id="precoNecessario" style="color: #6b21a8; font-size: 1.05rem;">R$ 0,00</div>
+        </div>
+      </div>
+      <button type="button" class="target-btn" id="btnAplicarPreco">⬇️ Aplicar este preço no cálculo abaixo</button>
+    </div>
+
+    <!-- 1. Custos e Base -->
     <div class="section-title">1. Base do Produto</div>
     
     <div class="row editable">
@@ -205,7 +315,7 @@
       </div>
     </div>
 
-    <!-- Tarifas e Custos de Venda -->
+    <!-- 2. Marketplace & Taxas -->
     <div class="section-title">2. Taxas & Marketplace</div>
 
     <div class="row editable">
@@ -230,7 +340,7 @@
       </div>
     </div>
 
-    <!-- Preço Final Efetivo -->
+    <!-- 3. Preço Final Efetivo -->
     <div class="section-title">3. Venda Final & Retorno</div>
 
     <div class="row editable">
@@ -253,8 +363,17 @@
       </div>
     </div>
 
+    <!-- Toggle de Impostos -->
+    <div class="switch-container">
+      <span>Calcular Impostos (9,5%)?</span>
+      <label class="switch">
+        <input type="checkbox" id="considerarImpostos" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+
     <div class="row calc">
-      <label>Menos Impostos (9,5%)</label>
+      <label id="labelImposto">Menos Impostos (9,5%)</label>
       <div class="value-group">
         <div class="main-val" id="aposImpostos">R$ 0,00</div>
         <div class="sub-val" id="percImpostos">0,0%</div>
@@ -269,7 +388,7 @@
       </div>
     </div>
 
-    <!-- Despesas Adicionais -->
+    <!-- 4. Despesas Operacionais -->
     <div class="section-title">4. Despesas Operacionais</div>
 
     <div class="row editable">
@@ -295,8 +414,10 @@
     const fmtMoeda = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const fmtPerc = (val) => (val * 100).toFixed(2).replace('.', ',') + '%';
 
+    let ultimoPrecoNecessario = 0;
+
     function calcular() {
-      // Inputs Amarelos
+      // 1. Inputs Amarelos
       const F1 = parseFloat(document.getElementById('custoProd').value) || 0;
       const F2 = parseFloat(document.getElementById('vezes').value) || 0;
       const B3 = parseFloat(document.getElementById('markupDesejado').value) || 0;
@@ -307,41 +428,55 @@
       const B14 = parseFloat(document.getElementById('embalagem').value) || 0;
       const B15 = parseFloat(document.getElementById('freteFlex').value) || 0;
 
-      // Fórmulas da planilha
-      const B2 = F1 * F2; // Custo do Produto
+      // Margem Alvo Desejada
+      const margemAlvo = (parseFloat(document.getElementById('margemAlvo').value) || 0) / 100;
+
+      // Impostos
+      const incImpostos = document.getElementById('considerarImpostos').checked;
+      const taxaImposto = incImpostos ? 0.095 : 0.0;
+      document.getElementById('labelImposto').textContent = incImpostos ? 'Menos Impostos (9,5%)' : 'Menos Impostos (0% - Desativado)';
+
+      // 2. Fórmulas Base
+      const B2 = F1 * F2; // Custo Total Produto
       const B4 = B2 * B3; // Preço de Venda
       const C3 = B2 !== 0 ? (B4 / B2) - 1 : 0; // Markup Desejado %
-      const B7 = 1 - C7; // Tarifa Comissão líquida
+      const B7 = 1 - C7;  // Líquido da Comissão
 
-      // Preço de Venda E-commerce = (B4 + B5) / B7
+      // 3. Cálculo Inverso: Preço Necessário para atingir a Margem Líquida Alvo
+      // Fórmula: Preço = (Custos Fixos) / (1 - Comissão - Imposto - Margem Alvo)
+      const divisor = B7 - taxaImposto - margemAlvo;
+      const custosFixos = B2 + B5 - B6 + B14 + B15;
+
+      if (divisor > 0) {
+        ultimoPrecoNecessario = custosFixos / divisor;
+        document.getElementById('precoNecessario').textContent = fmtMoeda(ultimoPrecoNecessario);
+      } else {
+        document.getElementById('precoNecessario').textContent = 'Margem inviável';
+        ultimoPrecoNecessario = 0;
+      }
+
+      // 4. Fluxo normal da Planilha com o Preço de Venda Final (B9)
       const B8 = B7 !== 0 ? (B4 + B5) / B7 : 0;
-
-      // Markup Final no E-commerce = ((B9 * B7) - B5 + B6) / B2
       const B10 = B2 !== 0 ? ((B9 * B7) - B5 + B6) / B2 : 0;
-
-      // Valor que Sobra E-commerce = B2 * B10
       const B11 = B2 * B10;
       const C11 = B9 !== 0 ? B11 / B9 : 0;
 
-      // Menos Impostos = B11 - (B9 * 0.095)
-      const B12 = B11 - (B9 * 0.095);
+      const B12 = B11 - (B9 * taxaImposto);
       const C12 = B9 !== 0 ? B12 / B9 : 0;
 
-      // Menos Custo Produto = B12 - B2
       const B13 = B12 - B2;
       const C13 = B9 !== 0 ? B13 / B9 : 0;
 
-      // Menos Custo da Embalagem = B13 - B14 - B15
       const B16 = B13 - B14 - B15;
       const C16 = B9 !== 0 ? B16 / B9 : 0;
 
-      // Renderização
+      // 5. Renderização
       document.getElementById('custoTotalProd').textContent = fmtMoeda(B2);
       document.getElementById('markupPerc').textContent = fmtPerc(C3);
       document.getElementById('precoVendaSugerido').textContent = fmtMoeda(B4);
       document.getElementById('precoVendaEcommerce').textContent = fmtMoeda(B8);
       document.getElementById('markupFinal').textContent = B10.toFixed(2).replace('.', ',') + 'x';
-      
+
       document.getElementById('valorSobra').textContent = fmtMoeda(B11);
       document.getElementById('percSobra').textContent = fmtPerc(C11);
 
@@ -355,9 +490,18 @@
       document.getElementById('percResultadoFinal').textContent = fmtPerc(C16);
     }
 
+    // Botão para aplicar o preço calculado diretamente no Preço Final
+    document.getElementById('btnAplicarPreco').addEventListener('click', () => {
+      if (ultimoPrecoNecessario > 0) {
+        document.getElementById('precoFinal').value = ultimoPrecoNecessario.toFixed(2);
+        calcular();
+      }
+    });
+
     document.querySelectorAll('input').forEach(input => {
       input.addEventListener('input', calcular);
     });
+    document.getElementById('considerarImpostos').addEventListener('change', calcular);
 
     calcular();
   </script>
