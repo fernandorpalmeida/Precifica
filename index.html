@@ -213,7 +213,7 @@
       transform: translateX(22px);
     }
 
-    /* Cartão do Simulador Alvo */
+    /* Card do Simulador Alvo */
     .target-card {
       background: #faf5ff;
       border: 1.5px dashed #a855f7;
@@ -227,29 +227,39 @@
       font-weight: 700;
       color: #6b21a8;
       text-transform: uppercase;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
-    .target-btn {
-      width: 100%;
+    .btn-group-target {
+      display: flex;
+      gap: 8px;
       margin-top: 10px;
+    }
+
+    .target-btn {
+      flex: 1;
       background: #7e22ce;
       color: white;
       border: none;
-      padding: 9px;
+      padding: 9px 6px;
       border-radius: 8px;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
       transition: 0.2s;
+      text-align: center;
+    }
+
+    .target-btn.sec {
+      background: #4b5563;
     }
 
     .target-btn:active {
       transform: scale(0.98);
-      background: #6b21a8;
+      opacity: 0.9;
     }
 
     .btn-reset {
@@ -273,20 +283,42 @@
       <p><span class="badge-yellow"></span> Salva automaticamente sua última simulação</p>
     </header>
 
-    <!-- 0. Simulador de Margem Alvo -->
+    <!-- 0. Simulador de Margem Alvo com Desconto -->
     <div class="target-card">
-      <div class="title">🎯 Preço Sugerido por Margem Alvo</div>
-      <div class="row editable" style="margin-bottom: 8px; background: #fff;">
+      <div class="title">🎯 Simulador: Margem Alvo & Promoção</div>
+      
+      <div class="row editable" style="margin-bottom: 6px; background: #fff;">
         <label for="margemAlvo">Resultado Líquido Desejado (%)</label>
         <input type="number" id="margemAlvo" step="0.5" value="20.0" />
       </div>
-      <div class="row calc" style="background: #f3e8ff; border-color: #d8b4fe;">
-        <label style="color: #581c87; font-weight: 700;">Preço de Venda Necessário</label>
+
+      <div class="row editable" style="margin-bottom: 10px; background: #fff;">
+        <label for="percDesconto">Pretende dar desconto de (%)</label>
+        <input type="number" id="percDesconto" step="0.5" value="0.0" placeholder="Ex: 10" />
+      </div>
+
+      <!-- Preço Cheio de Anúncio -->
+      <div class="row calc" style="background: #ede9fe; border-color: #c4b5fd; margin-bottom: 6px;">
+        <label style="color: #4c1d95; font-weight: 700;">Preço de Anúncio (Cheio / "De")</label>
         <div class="value-group">
-          <div class="main-val" id="precoNecessario" style="color: #6b21a8; font-size: 1.05rem;">R$ 0,00</div>
+          <div class="main-val" id="precoAnuncio" style="color: #5b21b6; font-size: 1.1rem;">R$ 0,00</div>
+          <div class="sub-val" id="subPrecoAnuncio">Cadastrar no Marketplace</div>
         </div>
       </div>
-      <button type="button" class="target-btn" id="btnAplicarPreco">⬇️ Aplicar este preço no cálculo abaixo</button>
+
+      <!-- Preço Efetivo após desconto -->
+      <div class="row calc" style="background: #fdf4ff; border-color: #f0abfc;">
+        <label style="color: #701a75;">Preço Efetivo de Venda ("Por")</label>
+        <div class="value-group">
+          <div class="main-val" id="precoEfetivoVenda" style="color: #86198f;">R$ 0,00</div>
+          <div class="sub-val" id="subPrecoEfetivo">Após aplicar o desconto</div>
+        </div>
+      </div>
+
+      <div class="btn-group-target">
+        <button type="button" class="target-btn" id="btnAplicarEfetivo">⬇️ Aplicar Preço Efetivo</button>
+        <button type="button" class="target-btn sec" id="btnAplicarCheio">⬇️ Aplicar Preço Cheio</button>
+      </div>
     </div>
 
     <!-- 1. Custos e Base -->
@@ -430,14 +462,15 @@
     const fmtPerc = (val) => (val * 100).toFixed(2).replace('.', ',') + '%';
 
     const inputIds = [
-      'margemAlvo', 'custoProd', 'vezes', 'markupDesejado',
+      'margemAlvo', 'percDesconto', 'custoProd', 'vezes', 'markupDesejado',
       'tarifaFrete', 'bonificacao', 'tarifaComissao',
       'precoFinal', 'embalagem', 'freteFlex'
     ];
 
-    let ultimoPrecoNecessario = 0;
+    let ultimoPrecoEfetivo = 0;
+    let ultimoPrecoAnuncio = 0;
 
-    // Salva o estado atual na memória do navegador/celular
+    // Salva o estado atual na memória do celular
     function salvarDados() {
       const dados = {};
       inputIds.forEach(id => {
@@ -447,7 +480,7 @@
       localStorage.setItem('dadosSimulacaoMarketplace', JSON.stringify(dados));
     }
 
-    // Carrega os dados salvos da última vez que o app foi usado
+    // Carrega a última simulação salva
     function carregarDadosSalvos() {
       const dadosSalvos = localStorage.getItem('dadosSimulacaoMarketplace');
       if (dadosSalvos) {
@@ -479,8 +512,9 @@
       const B14 = parseFloat(document.getElementById('embalagem').value) || 0;
       const B15 = parseFloat(document.getElementById('freteFlex').value) || 0;
 
-      // Margem Alvo Desejada
+      // Margem Alvo e Desconto
       const margemAlvo = (parseFloat(document.getElementById('margemAlvo').value) || 0) / 100;
+      const percDesconto = (parseFloat(document.getElementById('percDesconto').value) || 0) / 100;
 
       // Impostos
       const incImpostos = document.getElementById('considerarImpostos').checked;
@@ -489,23 +523,32 @@
 
       // Fórmulas Base
       const B2 = F1 * F2; // Custo Total Produto
-      const B4 = B2 * B3; // Preço de Venda
+      const B4 = B2 * B3; // Preço de Venda Sugerido
       const C3 = B2 !== 0 ? (B4 / B2) - 1 : 0; // Markup Desejado %
-      const B7 = 1 - C7;  // Líquido da Comissão
+      const B7 = 1 - C7;  // Tarifa Comissão Líquida
 
-      // Cálculo Inverso de Margem Alvo
+      // Cálculo Inverso: Preço Efetivo necessário para atingir a Margem Alvo
       const divisor = B7 - taxaImposto - margemAlvo;
       const custosFixos = B2 + B5 - B6 + B14 + B15;
 
-      if (divisor > 0) {
-        ultimoPrecoNecessario = custosFixos / divisor;
-        document.getElementById('precoNecessario').textContent = fmtMoeda(ultimoPrecoNecessario);
+      if (divisor > 0 && percDesconto < 1) {
+        ultimoPrecoEfetivo = custosFixos / divisor;
+        ultimoPrecoAnuncio = ultimoPrecoEfetivo / (1 - percDesconto);
+
+        document.getElementById('precoEfetivoVenda').textContent = fmtMoeda(ultimoPrecoEfetivo);
+        document.getElementById('precoAnuncio').textContent = fmtMoeda(ultimoPrecoAnuncio);
+
+        document.getElementById('subPrecoAnuncio').textContent = percDesconto > 0 
+          ? `Permite ${ (percDesconto * 100).toFixed(1).replace('.', ',') }% de desconto` 
+          : 'Sem desconto configurado';
       } else {
-        document.getElementById('precoNecessario').textContent = 'Margem inviável';
-        ultimoPrecoNecessario = 0;
+        document.getElementById('precoEfetivoVenda').textContent = 'Inviável';
+        document.getElementById('precoAnuncio').textContent = 'Inviável';
+        ultimoPrecoEfetivo = 0;
+        ultimoPrecoAnuncio = 0;
       }
 
-      // Fluxo normal da Planilha
+      // Fluxo da Planilha com Preço de Venda Final Atual (B9)
       const B8 = B7 !== 0 ? (B4 + B5) / B7 : 0;
       const B10 = B2 !== 0 ? ((B9 * B7) - B5 + B6) / B2 : 0;
       const B11 = B2 * B10;
@@ -539,19 +582,27 @@
       document.getElementById('resultadoFinal').textContent = fmtMoeda(B16);
       document.getElementById('percResultadoFinal').textContent = fmtPerc(C16);
 
-      // Salva sempre que houver alteração
+      // Salva na memória do celular
       salvarDados();
     }
 
-    // Botão para aplicar o preço calculado
-    document.getElementById('btnAplicarPreco').addEventListener('click', () => {
-      if (ultimoPrecoNecessario > 0) {
-        document.getElementById('precoFinal').value = ultimoPrecoNecessario.toFixed(2);
+    // Botão: Aplicar Preço Efetivo (preço com desconto aplicado)
+    document.getElementById('btnAplicarEfetivo').addEventListener('click', () => {
+      if (ultimoPrecoEfetivo > 0) {
+        document.getElementById('precoFinal').value = ultimoPrecoEfetivo.toFixed(2);
         calcular();
       }
     });
 
-    // Botão para resetar aos valores de fábrica
+    // Botão: Aplicar Preço Cheio (preço de anúncio)
+    document.getElementById('btnAplicarCheio').addEventListener('click', () => {
+      if (ultimoPrecoAnuncio > 0) {
+        document.getElementById('precoFinal').value = ultimoPrecoAnuncio.toFixed(2);
+        calcular();
+      }
+    });
+
+    // Botão de restaurar
     document.getElementById('btnResetar').addEventListener('click', () => {
       if (confirm("Deseja restaurar os valores padrão da planilha?")) {
         localStorage.removeItem('dadosSimulacaoMarketplace');
@@ -559,13 +610,13 @@
       }
     });
 
-    // Ouvintes de eventos
+    // Eventos
     document.querySelectorAll('input').forEach(input => {
       input.addEventListener('input', calcular);
     });
     document.getElementById('considerarImpostos').addEventListener('change', calcular);
 
-    // Carrega dados salvos e calcula na inicialização
+    // Inicialização
     carregarDadosSalvos();
     calcular();
   </script>
